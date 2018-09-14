@@ -210,14 +210,14 @@ EndpointDescription UaClient::SelectEndpoint(const std::string & endpoint)
   throw std::runtime_error("No supported endpoints found on server");
 }
 
-void UaClient::Connect(const std::string & endpoint)
+void UaClient::Connect(const std::string & endpoint, const ReconnectCb & callback)
 {
   EndpointDescription endpointdesc = SelectEndpoint(endpoint);
   endpointdesc.EndpointUrl = endpoint; //force the use of the enpoint the user wants, seems like servers often send wrong hostname
-  Connect(endpointdesc);
+  Connect(endpointdesc, callback);
 }
 
-void UaClient::Connect(const EndpointDescription & endpoint)
+void UaClient::Connect(const EndpointDescription & endpoint, const ReconnectCb & callback)
 {
   Endpoint = endpoint;
   const Common::Uri serverUri(Endpoint.EndpointUrl);
@@ -227,7 +227,7 @@ void UaClient::Connect(const EndpointDescription & endpoint)
   params.EndpointUrl = Endpoint.EndpointUrl;
   params.SecurePolicy = "http://opcfoundation.org/UA/SecurityPolicy#None";
 
-  Server = OpcUa::CreateBinaryClient(channel, params, Logger);
+  Server = OpcUa::CreateBinaryClient(channel, params, callback, Logger);
 
   OpenSecureChannel();
 

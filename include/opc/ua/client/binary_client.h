@@ -38,5 +38,6 @@ struct SecureConnectionParams
 /// @param channel channel wich will be used for sending requests data.
 Services::SharedPtr CreateBinaryClient(IOChannel::SharedPtr channel, const SecureConnectionParams & params, const Common::Logger::SharedPtr & logger = nullptr);
 Services::SharedPtr CreateBinaryClient(const std::string & endpointUrl, const Common::Logger::SharedPtr & logger = nullptr);
+Services::SharedPtr CreateBinaryClient(IOChannel::SharedPtr channel, const SecureConnectionParams & params, const std::function<void()>& restart_callback, const Common::Logger::SharedPtr & logger = nullptr);
 
 } // namespace OpcUa

@@ -46,7 +46,11 @@ int main(int argc, char ** argv)
       logger->info("Connecting to: {}", endpoint);
 
       OpcUa::UaClient client(logger);
-      client.Connect(endpoint);
+      OpcUa::ReconnectCb callback = []()
+      {
+        std::cout << "Reconnect callback has been called" << std::endl;
+      };
+      client.Connect(endpoint, callback);
 
       //get Root node on server
       OpcUa::Node root = client.GetRootNode();

@@ -60,6 +60,7 @@ private:
   Common::Logger::SharedPtr Logger;
 };
 
+typedef std::function<void()> ReconnectCb;
 
 class UaClient
 {
@@ -88,12 +89,12 @@ public:
   /// @brief  connect to a server, specify endpoint as string
   // a connection will be made to server to get endpoint description
   // an endpoint description will be selected and then a connection will attempted
-  void Connect(const std::string & endpoint);
+  void Connect(const std::string & endpoint, const ReconnectCb & callback);
 
   /// @brief connect to a server, specify endpoint as EndpointDesciption
   // EndpointDescription can be defined by hand or gotten through
   // a call to GetServerEndpoints()
-  void Connect(const EndpointDescription &);
+  void Connect(const EndpointDescription &, const ReconnectCb & callback);
 
   /// @brief Disconnect from server
   // close communication with OPC-UA server, close all threads and subscriptions
