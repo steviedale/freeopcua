@@ -244,6 +244,45 @@ public:
     });
   }
 
+  BinaryClient(std::shared_ptr<IOChannel> channel, const SecureConnectionParams & params, const Common::Logger::SharedPtr & logger,
+               const std::function<void()>& restart_callback)
+    : Channel(channel)
+    , Stream(channel)
+    , Params(params)
+    , SequenceNumber(1)
+    , RequestNumber(1)
+    , RequestHandle(0)
+    , Logger(logger)
+    , CallbackService(logger)
+    , RestartCallback(restart_callback)
+
+  {
+    //Initialize the worker thread for subscriptions
+    callback_thread = std::thread([&]() { CallbackService.Run(); });
+
+    HelloServer(params);
+
+    ReceiveThread = std::thread([this]()
+    {
+      try
+        {
+          while (!Finished)
+            { Receive(); }
+        }
+
+      catch (const std::exception & exc)
+        {
+          if (Finished) { return; }
+
+          LOG_ERROR(Logger, "binary_client         | ReceiveThread: error receiving data: {}", exc.what());
+          LOG_ERROR(Logger, "binary_client         | ReceiveThread: attempting restart");
+
+          RestartCallback();
+        }
+    });
+  }
+
+
   ~BinaryClient()
   {
     Finished = true;
@@ -1111,6 +1150,8 @@ private:
 
   bool firstMsgParsed = false;
   ResponseHeader header;
+
+  std::function<void()> RestartCallback;
 };
 
 template <>
@@ -1140,9 +1181,14 @@ OpcUa::Services::SharedPtr OpcUa::CreateBinaryClient(OpcUa::IOChannel::SharedPtr
 OpcUa::Services::SharedPtr OpcUa::CreateBinaryClient(const std::string & endpointUrl, const Common::Logger::SharedPtr & logger)
 {
   const Common::Uri serverUri(endpointUrl);
-  OpcUa::IOChannel::SharedPtr channel = OpcUa::Connect(serverUri.Host(), serverUri.Port(), logger);
+  OpcUa::IOChannel::SharedPtr channel = OpcUa::Connect(serverUri.Host(), serverUri.Port(), logger);  
   OpcUa::SecureConnectionParams params;
   params.EndpointUrl = endpointUrl;
   params.SecurePolicy = "http://opcfoundation.org/UA/SecurityPolicy#None";
   return CreateBinaryClient(channel, params, logger);
+}
+
+OpcUa::Services::SharedPtr OpcUa::CreateBinaryClient(OpcUa::IOChannel::SharedPtr channel, const OpcUa::SecureConnectionParams & params, const std::function<void()>& feedback_callback, const Common::Logger::SharedPtr & logger)
+{
+  return std::make_shared<BinaryClient>(channel, params, logger, feedback_callback);
 }
